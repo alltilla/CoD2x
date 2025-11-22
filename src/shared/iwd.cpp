@@ -492,10 +492,11 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
 
     // Read value via function to get value even if dvar is not registered yet
     int dedicatedValue = Dvar_GetInt("dedicated");
+    const char* fs_game = Dvar_GetString("fs_game");
 
-    // Server
+    // Server or mod (non-main) folder
     // - load all, do not filter
-    if (dedicatedValue > 0) {
+    if (dedicatedValue > 0 || (fs_game && fs_game[0] != '\0')) {
         return result;
     }
 
