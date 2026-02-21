@@ -405,6 +405,10 @@ void match_cancel(const char* reason) {
     } else {
         Com_Printf("No match is currently active.\n");
     }
+
+    // Clean up match state
+    match.downloading = false;
+    match.loading = false;
 }
 
 
@@ -487,13 +491,20 @@ void match_cmd() {
 
         // match create "http://localhost:8080/api/match/1234"
 
+        // There is a problem when URL is passed without quotes - // is then handled as separator for some reason 
+
         const char* endpoint = Cmd_Argv(2);
         if (endpoint[0] == '\0') {
             Com_Printf("Please provide an endpoint URL.\n");
             return;
         }
 
-        if (match.activated || match.downloading || match.loading) {
+        if (match.downloading) {
+            Com_Printf("Match is already downloading, please wait or cancel it first.\n");
+            return;
+        }
+
+        if (match.activated || match.loading) {
             Com_Printf("Match is already in progress, cancel it first.\n");
             return;
         }
@@ -551,7 +562,7 @@ void match_cmd() {
 
         match.httpClient->get(
             url,
-            [](const HttpClient::Response& res) {
+            [url](const HttpClient::Response& res) {
 
                 // Match downloading was canceled in the meantime
                 if (match.downloading == false || match.canceling == true)
@@ -573,7 +584,10 @@ void match_cmd() {
                     return;
                 }
 
-                Com_Printf("Match data downloaded successfully, loading first map...\n");
+                Com_Printf("==============================================\n");
+                Com_Printf("Match downloading from %s completed!\n", url);
+                Com_Printf("Loading first map...\n");
+                Com_Printf("==============================================\n");
 
                 match.downloading = false;
                 match.loading = true;
@@ -599,17 +613,21 @@ void match_cmd() {
 
     } else if (Q_stricmp(command, "status") == 0) {
 
-        if (match.downloading || match.loading) {
-            Com_Printf("Match is currently loading...\n");
-        } else if (!match.activated) {
-            Com_Printf("No match is currently active.\n");
-        } else {
+        if (match.activated) {
             auto progressData = match_create_json_data();
 
             Com_Printf("Match is currently active.\n");
             Com_Printf("URL: %s\n", match.url);
             Com_Printf("Match data:\n%s\n", match.data.json.c_str());
             Com_Printf("Progress data:\n%s\n", progressData.c_str());
+        } else {
+            if (match.downloading) {
+                Com_Printf("Match is currently downloading...\n");
+            } else if (match.loading) {
+                Com_Printf("Match is currently loading...\n");
+            } else {
+                Com_Printf("No match is currently active.\n");
+            }
         }
 
     } else if (Q_stricmp(command, "redownload") == 0) {
