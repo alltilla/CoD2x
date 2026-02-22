@@ -12,11 +12,14 @@ It focuses on fixing bugs and adding new features to the game.
 - This software may be terminated or withdrawn at any time
 
 # Version history
-- 2025-11-04 - **[1.4.6.1](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.1)** - **current**
+- 2026-02-22 - **[1.4.6.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.4)** - **current**
 
 <details>
   <summary>Older versions</summary>
 
+- 2025-11-18: **[1.4.6.3](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.3)**
+- 2025-11-06: **[1.4.6.2](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.2)**
+- 2025-11-04: **[1.4.6.1](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.1)**
 - 2025-07-25: **[1.4.4.6](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.4.6)**
 - 2025-07-12: **[1.4.4.5](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.4.5)**
 - 2025-07-04: **[1.4.4.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.4.4)**
