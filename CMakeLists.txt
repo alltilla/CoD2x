@@ -129,6 +129,20 @@ if (WIN32)
 
   
 
+  # Generate symbols_mss32.h from the just-linked (pre-strip) DLL.
+  # Only runs for Release builds; Debug builds skip this to avoid the two-pass requirement.
+  # Must be listed BEFORE the strip command so the COFF symbol table is still intact.
+  if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_custom_command(TARGET mss32 POST_BUILD
+      COMMAND powershell -ExecutionPolicy Bypass -File
+          "${CMAKE_SOURCE_DIR}/src/other/generate_mss32_symbols_h.ps1"
+          -DllPath "$<TARGET_FILE:mss32>"
+          -OutHdr  "${CMAKE_SOURCE_DIR}/src/mss32/symbols_mss32.h"
+          -NmExe   "${CMAKE_SOURCE_DIR}/tools/mingw/bin/nm.exe"
+      COMMENT "Generating symbols_mss32.h"
+      VERBATIM)
+  endif()
+
   # Optional strip after link (for release packaging)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     if (NOT CMAKE_STRIP)

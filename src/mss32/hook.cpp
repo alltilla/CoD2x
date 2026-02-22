@@ -16,6 +16,7 @@
 #include "window.h"
 #include "rinput.h"
 #include "competitive.h"
+#include "console.h"
 #include "cgame.h"
 #include "updater.h"
 #include "hwid.h"
@@ -183,6 +184,7 @@ void hook_CL_Init() {
     window_init();      // depends on being called before gfx dll is loaded
     rinput_init();
     competitive_init();
+    console_init();
     cgame_init();
     master_server_init();
     match_init_client();
@@ -295,6 +297,7 @@ bool hook_patch() {
     window_patch();
     rinput_patch();
     competitive_patch();
+    console_patch();
     cgame_patch();
     updater_patch();
     master_server_patch();
