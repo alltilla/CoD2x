@@ -424,7 +424,7 @@ void demo_frame() {
                         demo_uploadingDoneSuccessfully = true;
 
                     } else {
-                        Com_Printf("^1Demo upload failed with status: %d\n", response.status);
+                        Com_Printf("^1Demo upload failed with status: %d. Response: %s\n", response.status, response.body.c_str());
                         demo_uploadingErrorMessage = "Error: " + std::to_string(response.status);
                         demo_uploadingHideAtTime = ticks_ms() + 3000; // Hide after 3 seconds
                         demo_uploadingErrorCount++;
