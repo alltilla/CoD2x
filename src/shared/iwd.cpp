@@ -471,16 +471,6 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
     // extension: "iwd"
     // result[0] = "iw_00.iwd"
 
-    // Extract the last folder name from directory, find the last occurrence of either '\\' or '/'
-    const char* folder;
-    const char* lastSlash = nullptr;
-    for (const char* p = directory; *p; ++p) {
-        if (*p == '\\' || *p == '/') {
-            lastSlash = p;
-        }
-    }
-    folder = lastSlash ? lastSlash + 1 : directory;
-
     // When the game starts for the first time, load only the original IWD files
     // The main folder might contain mix of mods from different servers that might cause "iwd sum mismatch" errors when running the game
     // This will make sure these mods are not loaded at startup, but will be loaded when connecting to the game
@@ -492,16 +482,52 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
 
     // Read value via function to get value even if dvar is not registered yet
     int dedicatedValue = Dvar_GetInt("dedicated");
-    const char* fs_game = Dvar_GetString("fs_game");
 
-    // Server or mod (non-main) folder
-    // - load all, do not filter
-    if (dedicatedValue > 0 || (fs_game && fs_game[0] != '\0')) {
+    // Server - load all IWD files, do not filter. 
+    if (dedicatedValue > 0) {
         return result;
     }
 
-    else {
 
+    const char* fs_game = Dvar_GetString("fs_game");
+
+    // Helper: check whether 'path' ends with 'suffix', treating '\\' and '/' as equivalent (case-insensitive)
+    // The suffix must be preceded by a separator (or occupy the whole path).
+    auto pathEndsWith = [](const char* path, const char* suffix) -> bool {
+        if (!suffix || suffix[0] == '\0') return false;
+        size_t pathLen = strlen(path);
+        size_t suffixLen = strlen(suffix);
+        if (pathLen < suffixLen) return false;
+        const char* pathEnd = path + pathLen - suffixLen;
+        // Must be at the start or preceded by a path separator
+        if (pathEnd != path && *(pathEnd - 1) != '\\' && *(pathEnd - 1) != '/') return false;
+        for (size_t k = 0; k < suffixLen; k++) {
+            char pc = pathEnd[k]; if (pc == '\\') pc = '/';
+            char sc = suffix[k];  if (sc == '\\') sc = '/';
+            if (tolower((unsigned char)pc) != tolower((unsigned char)sc)) return false;
+        }
+        return true;
+    };
+
+    // Extract the folder name from directory.
+    // First check whether directory corresponds to fs_game (which may contain slashes).
+    // Fall back to the last path segment only when that check fails.
+    const char* folder;
+    if (fs_game && fs_game[0] != '\0' && pathEndsWith(directory, fs_game)) {
+        folder = fs_game;
+    } else {
+        const char* lastSlash = nullptr;
+        for (const char* p = directory; *p; ++p) {
+            if (*p == '\\' || *p == '/') lastSlash = p;
+        }
+        folder = lastSlash ? lastSlash + 1 : directory;
+    }
+
+    // This is fs_game folder
+    bool isFsGameFolder = fs_game && fs_game[0] != '\0' && pathEndsWith(directory, fs_game);
+
+
+    {
         // The original function created list of loaded iwd files
         // We will remove some entries from this list via filtering
         int writeIndex = 0;
@@ -533,16 +559,16 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
             snprintf(iwIwdName, sizeof(iwIwdName), "/%.*s", len, result[i]);
             
             // Is file "iw_00" - "iw_15" or starts with "localized_"
-            bool isOriginalFile = FS_iwIwd(iwIwdName, "", cod2x_version);
+            bool allowFileToBeLoaded = FS_iwIwd(iwIwdName, "", cod2x_version);
 
 
             // When connecting to server or replaying demo
-            if (isOriginalFile == false && COD2X_WIN32 && isListenServer == false && clientState >= CLIENT_STATE_CONNECTING) {
+            if (allowFileToBeLoaded == false && COD2X_WIN32 && isListenServer == false && clientState >= CLIENT_STATE_CONNECTING) {
 
                 // When playing demo, load all IWD files in movie folder
                 // This allows to load mod IWD files when playing demo
                 if (demo_isPlaying && stricmp(folder, "movie") == 0) {                 
-                    isOriginalFile = true;                  
+                    allowFileToBeLoaded = true;                  
                 }
                 // For other non-movie folders or when conecting to server, load only IWD files referenced by the server
                 else {
@@ -563,7 +589,7 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
                             // result[i] might be "zpam_maps_v4.iwd" or "zpam_maps_v4.8bb28f35.iwd" (use both)
                             if (I_strnicmp(demoIwdName, result[i], strlen(demoIwdName)) == 0) {
                                 Com_Printf("Required IWD from server/demo: %s.iwd\n", demoIwdName);
-                                isOriginalFile = true;
+                                allowFileToBeLoaded = true;
                                 break;
                             }
                         }
@@ -572,7 +598,7 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
             }
 
             // Listen server
-            if (isOriginalFile == false && isListenServer) {
+            if (allowFileToBeLoaded == false && isListenServer) {
                 
                 // Helper lambda to check if zpam/zpam_maps_v IWD is latest, allowing suffix after version
                 auto isLatestZpamIwd = [&](const char* prefix) -> bool {
@@ -600,18 +626,24 @@ char** Sys_ListFiles(char* extension, int32_t* numFiles, int32_t wantsubs) {
                 // Allow latest "zpam[...].iwd" file
                 if (isLatestZpamIwd("zpam")) {
                     Com_Printf("Allowed latest ZPAM IWD file: %s\n", result[i]);
-                    isOriginalFile = true;
+                    allowFileToBeLoaded = true;
                 }
 
                 // Allow latest "zpam_maps_vX[...].iwd" file
                 if (isLatestZpamIwd("zpam_maps_v")) {
                     Com_Printf("Allowed latest ZPAM_MAPS IWD file: %s\n", result[i]);
-                    isOriginalFile = true;
+                    allowFileToBeLoaded = true;
                 }
                 
             }
 
-            if (isOriginalFile) {
+            // Runned with fs_game, but not connecting to server yet, allow loading IWD files for that folder 
+            if (allowFileToBeLoaded == false && isFsGameFolder) {
+                allowFileToBeLoaded = true;
+            }
+
+
+            if (allowFileToBeLoaded) {
                 // Swap the entries in the list
                 // We could remove the item from the list, but the string is allocated by the original function and we cannot free it in this dll, because its using different memory manager
                 if (writeIndex != i) {
