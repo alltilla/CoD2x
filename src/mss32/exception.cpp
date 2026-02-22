@@ -1158,7 +1158,7 @@ LONG WINAPI exception_handler(EXCEPTION_POINTERS* pExceptionInfo) {
 
             char frame0[512];
             int f0len = snprintf(frame0, sizeof(frame0),
-                "  0  0x%08X  0x%08X  %-18s  %-8s  %s\n",
+                "  0  0x%08X  0x%08X  %-22s  %-8s  %s\n",
                 exceptionAddress, fileOffset, moduleName, section0, symbol0);
 
             if (f0len > 0 && (size_t)f0len + written < sizeof(stackDump)) {
