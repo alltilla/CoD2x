@@ -709,11 +709,80 @@ void window_frame() {
 }
 
 
+/**
+ * Hook for the call to R_UsedCachedStaticModelSurface at gfx_d3d_mp_x86_s.dll+0x0001f53f.
+ *
+ * The function performs a doubly-linked LRU move-to-front for a Static Model Cache.
+ * 
+ * arg1 (eax): pointer/offset somewhere within a cache array entry
+ * data_108eab00: base address of the cache array (array of 0x188-byte entries)
+ *
+ * The function normalizes arg1 to the start of its cache entry:
+ *   index = (arg1 - data_108eab00) / 0x188       (using magic multiply 0x5397829d)
+ *   normalized_ptr = index * 0x188 + data_108eab00
+ *
+ * Cache entry structure (0x188 = 392 bytes total):
+ *   +0x0  prev       (SMCNode* - LRU list previous)
+ *   +0x4  next       (SMCNode* - LRU list next)
+ *   +0x8  frameData  (int - frame counter from frontEndDataOut)
+ *   +0xC  ...        (380 more bytes of cached surface data)
+ *
+ * Crash at 0x0002bd23 (since 1.4.3.2):
+ *   mov ecx, [eax+4]   ; ecx = node->next
+ *   mov [ecx], edx     ; ACCESS_VIOLATION because ecx (next) == NULL
+ *
+ * Root cause: R_CacheStaticModelSurface can return a cache entry whose next/prev
+ * pointers are still zero (never linked into the LRU list), so unlink crashes.
+ *
+ * Fix: normalize arg1, check next/prev for NULL, skip if unlinked.
+ */
+
+struct SMCNode {
+    SMCNode* prev;      // +0x0 LRU list previous pointer
+    SMCNode* next;      // +0x4 LRU list next pointer
+    int      frameData; // +0x8 Frame counter
+    char cachedData[0x17c];
+};
+
+// VA 0x108eab00 - 0x10000000 (preferred base) = RVA 0x008eab00
+#define SMC_CACHE_BASE      (gfx_module_addr + 0x008eab00u)
+#define SMC_ENTRY_SIZE      0x188  // 392 bytes per cache entry
+
+static void* hook_R_UsedCachedStaticModelSurface()
+{
+    uintptr_t arg1;  // Pointer passed in eax (may point anywhere within a cache entry)
+    ASM(movr, arg1, "eax");
+
+    // Normalize arg1 to the start of its 0x188-byte cache entry.
+    // Original uses: index = (arg1 - base) / 0x188 via magic multiply 0x5397829d.
+    // We use simple integer division (slower but correct, only runs on NULL check path).
+    uintptr_t offset = arg1 - SMC_CACHE_BASE;
+    uintptr_t index = offset / SMC_ENTRY_SIZE;
+    SMCNode* node = (SMCNode*)(SMC_CACHE_BASE + index * SMC_ENTRY_SIZE);
+
+    // If the cache entry isn't linked into the LRU list yet, skip to avoid crash.
+    if (node->next == NULL || node->prev == NULL)
+        return node;
+
+    // Call the original function for the normal path (pass original arg1).
+    void* ret;
+    ASM_CALL(RETURN(ret), (gfx_module_addr + 0x0002bcf0u), 0, EAX(arg1));
+    return ret;
+}
+
+#undef SMC_CACHE_BASE
+#undef SMC_ENTRY_SIZE
+
+
 // Called when the game loaded the renderer DLL
 void window_rendered() {
 
     // Patch the function that creates the window
     patch_call(gfx_module_addr + 0x00012d69, (unsigned int)R_CreateWindow);
+
+    // Fix crash in R_UsedCachedStaticModelSurface when node->next/prev is NULL
+    // (ACCESS_VIOLATION at gfx+0x0002bd23, call site at gfx+0x0001f53f, since 1.4.3.2)
+    patch_call(gfx_module_addr + 0x0001f53f, (unsigned int)hook_R_UsedCachedStaticModelSurface);
 
     // Change flags of r_fullscreen cvar - removed original DVAR_ROM flag - now user can change the value
     patch_int32(gfx_module_addr + 0x000ba43 + 1, (DVAR_ARCHIVE | DVAR_LATCH | DVAR_CHANGEABLE_RESET | DVAR_RENDERER));
