@@ -37,6 +37,7 @@
 #include "../shared/cod2_dvars.h"
 #include "../shared/gsc.h"
 #include "../shared/match.h"
+#include "../shared/weapons.h"
 
 HMODULE hModule;
 unsigned int gfx_module_addr;
@@ -81,6 +82,7 @@ void hook_Com_Frame()
             hotreload_unload();
             debug_unload();
             common_unload();
+            weapons_unload();
             radar_unload();
             demo_unload();
 
@@ -217,6 +219,7 @@ void hook_SV_Init() {
 
     // Shared & Server 
     freeze_init();
+    weapons_init();
     common_init();
     server_init();
     dvar_init();
@@ -307,6 +310,7 @@ bool hook_patch() {
     demo_patch();
     vmix_patch();
 
+    weapons_patch();
     // Patch server side
     common_patch();
     server_patch();
