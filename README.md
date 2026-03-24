@@ -12,11 +12,12 @@ It focuses on fixing bugs and adding new features to the game.
 - This software may be terminated or withdrawn at any time
 
 # Version history
-- 2026-02-22 - **[1.4.6.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.4)** - **current**
+- 2026-03-24 - **[1.4.6.5](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.5)** - **current**
 
 <details>
   <summary>Older versions</summary>
 
+- 2026-02-22: **[1.4.6.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.4)**
 - 2025-11-18: **[1.4.6.3](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.3)**
 - 2025-11-06: **[1.4.6.2](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.2)**
 - 2025-11-04: **[1.4.6.1](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.1)**
@@ -85,6 +86,9 @@ It focuses on fixing bugs and adding new features to the game.
 - Increased number of visible cvars in console
 - Increased dvar limit from 1280 to 4096
 - DDoS protection via rate limiter for incoming UDP packets
+- Shogun consistent pellet spread
+  - ![alt text](images/pellet_spread.png)
+  - changeable via new cvar `g_shotgun_spread_fix`
 
 #### Improvements
 - Added windowed and borderless window mode:
@@ -190,6 +194,7 @@ It focuses on fixing bugs and adding new features to the game.
 
 - `getViewOrigin` - Retrieves the player's current view origin as a 3D vector.
 - `getStance` - Retrieves the player's current stance (e.g., stand, crouch, prone).
+- `isUsingTurret` - Checks if the player is currently using a turret.
 
 - `matchPlayerGetData` - Retrieves match-related data for a player using a specified key.
 - `matchPlayerSetData` - Sets match-related data for a player using key-value pairs.

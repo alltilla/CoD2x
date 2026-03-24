@@ -47,8 +47,8 @@ extern "C" {
 #define NUM_IW_IWDS 25 // Original
 #define NUM_IW_COD2X_IWDS 1 // New CoD2x iwds
 
-#define ZPAM_LATEST_VERSION "zpam405"
-#define ZPAM_LATEST_MAPPACK "zpam_maps_v6"
+#define ZPAM_LATEST_VERSION "zpam406"
+#define ZPAM_LATEST_MAPPACK "zpam_maps_v7"
 
 extern dvar_t* g_cod2x;
 dvar_t* com_writeConfig = NULL;
@@ -75,6 +75,7 @@ static void iwd_processZpamFiles() {
         "zpam402.iwd",
         "zpam403.iwd",
         "zpam404.iwd",
+        "zpam405.iwd",
     };
     size_t blacklistSize = sizeof(blacklist) / sizeof(blacklist[0]);
 
