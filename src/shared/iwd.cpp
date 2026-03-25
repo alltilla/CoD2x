@@ -75,6 +75,7 @@ static void iwd_processZpamFiles() {
         "zpam402.iwd",
         "zpam403.iwd",
         "zpam404.iwd",
+        "zpam_maps_v6.iwd",
         "zpam405.iwd",
     };
     size_t blacklistSize = sizeof(blacklist) / sizeof(blacklist[0]);
