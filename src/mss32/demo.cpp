@@ -165,7 +165,7 @@ bool demo_getDemoForUpload(char* demoFileNameBuffer, size_t bufferSize, char* de
 void demo_drawing() {
 
     if (demo_isScheduledToCloseAfterUpload) {
-        CG_DrawRotatedPic(-128, 0, 896, 480, HORIZONTAL_ALIGN_LEFT, VERTICAL_ALIGN_TOP, 0, (vec4_t){0.0f, 0.0f, 0.0f, .9f}, shaderWhite);
+        CG_DrawRotatedPic(0, 0, 896, 480, HORIZONTAL_ALIGN_LEFT, VERTICAL_ALIGN_TOP, 0, (vec4_t){0.0f, 0.0f, 0.0f, .9f}, shaderWhite);
         const char* msg = "The game will be closed after the demo upload is complete.";
         float width = UI_TextWidth(msg, INT_MAX, fontNormal, 0.3);
         float height = UI_TextHeight(fontNormal, 0.3);
