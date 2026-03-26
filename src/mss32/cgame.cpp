@@ -129,16 +129,9 @@ void cgame_frame() {
     cgame_clientStateLast = clientState;
 }
 
-// .text:004020D0 const char *__usercall CL_GetConfigString@<eax>(int idx@<eax>)
-const char* CL_GetConfigString(int idx) {
-    const char* ret;
-    ASM_CALL(RETURN(ret), 0x004020d0, 0, EAX(idx));
-
-    return ret;
-}
 
 void CG_RegisterItems() {
-    if (strlen(CL_GetConfigString(8)) >= 0x108u) {
+    if (strlen(CL_GetConfigString(CS_ITEMS)) >= 0x108u) {
         Com_Error(ERR_DROP, "CG_RegisterItems: overflowed");
     }
 
