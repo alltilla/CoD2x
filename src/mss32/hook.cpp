@@ -365,6 +365,11 @@ bool hook_patch() {
     patch_byte(0x0046853b, 0xeb); // je => jmp  0x74 => 0xeb
 
 
+    // Fix MG sensitivity
+    patch_byte(0x0040867d, 0xeb); // 7416 je 0x408695 => EB16 jmp 0x408695
+    
+
+
     // Hot-reloading in debug mode
     #if DEBUG
         // DLL was hot-reloaded, we need to call the init functions again
