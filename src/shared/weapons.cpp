@@ -48,25 +48,25 @@ struct weaponParms
 void CalculatePelletPosition_8Pellets(int pelletIdx, float rotationAngle, int variant, float* outX, float* outY)
 {
     static const float pattern0[8][2] = {
-        {0.0f, -0.9f},     
-        {-0.826f, -0.321f},
-        {-0.514f, 0.735f}, 
-        {0.514f, 0.735f},  
-        {0.826f, -0.321f}, 
-        {0.0f, -0.275f},   
-        {-0.275f, 0.165f}, 
-        {0.275f, 0.165f}   
+        {  0.000f,  -0.800f },
+        {  0.000f,   0.000f },
+        {  0.000f,   0.400f },
+        {  0.000f,  -0.400f },
+        { -0.400f,   0.000f },
+        {  0.400f,   0.000f },
+        { -0.600f,   0.600f },
+        {  0.600f,   0.600f }
     };
 
     static const float pattern1[8][2] = {
-        { 0.260f,  0.342f },
-        {-0.300f,  0.342f },
-        {-0.020f, -0.460f },
-        {-0.020f, -0.020f },
-        {-0.712f, -0.712f },
-        { 0.674f,  0.674f },
-        { 0.664f, -0.712f },
-        {-0.712f,  0.664f } 
+        { -0.100f,   0.000f },
+        {  0.100f,   0.000f },
+        {  0.000f,   0.500f },
+        {  0.000f,  -0.500f },
+        { -0.800f,   0.600f },
+        {  0.800f,   0.600f },
+        { -0.800f,  -0.600f },
+        {  0.800f,  -0.600f }
     };
 
     const float (*pattern)[2] = (variant == 0) ? pattern0 : pattern1;
