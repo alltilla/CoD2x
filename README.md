@@ -12,11 +12,12 @@ It focuses on fixing bugs and adding new features to the game.
 - This software may be terminated or withdrawn at any time
 
 # Version history
-- 2026-03-25 - **[1.4.6.6](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.6)** - **current**
+- 2026-03-27 - **[1.4.6.7](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.7)** - **current**
 
 <details>
   <summary>Older versions</summary>
 
+- 2026-03-25: **[1.4.6.6](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.6)**
 - 2026-03-24: **[1.4.6.5](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.5)**
 - 2026-02-22: **[1.4.6.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.4)**
 - 2025-11-18: **[1.4.6.3](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.3)**
@@ -204,7 +205,7 @@ It focuses on fixing bugs and adding new features to the game.
 
 # How to install (client on Windows)
 1. You need original Call of Duty 2 with version [1.3](https://www.moddb.com/games/call-of-duty-2/downloads/call-of-duty-2-pc-patch-v-13) installed.
-2. Download latest version of CoD2x - [CoD2x_1.4.6.6_windows.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.6/CoD2x_1.4.6.6_windows.zip)
+2. Download latest version of CoD2x - [CoD2x_1.4.6.7_windows.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.7/CoD2x_1.4.6.7_windows.zip)
 3. Extract these files from the archive to the Call of Duty 2 folder, replacing any existing file:
     - 📄 mss32.dll
     - 📄 mss32_original.dll
@@ -233,7 +234,7 @@ It focuses on fixing bugs and adding new features to the game.
 
 
 # How to install (server on Linux)
-1. Download latest version of CoD2x - [CoD2x_1.4.6.6_linux.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.6/CoD2x_1.4.6.6_linux.zip)
+1. Download latest version of CoD2x - [CoD2x_1.4.6.7_linux.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.7/CoD2x_1.4.6.7_linux.zip)
 2. Extract this file from the archive to the Call of Duty 2 folder:
     - 📄 libCoD2x.so
 3. Final structure should look like this:
