@@ -15,6 +15,7 @@
 #include "freeze.h"
 #include "window.h"
 #include "rinput.h"
+#include "mouse.h"
 #include "competitive.h"
 #include "console.h"
 #include "cgame.h"
@@ -185,6 +186,7 @@ void hook_CL_Init() {
     hwid_init(); 
     window_init();      // depends on being called before gfx dll is loaded
     rinput_init();
+    mouse_init();
     competitive_init();
     console_init();
     cgame_init();
@@ -299,6 +301,7 @@ bool hook_patch() {
     freeze_patch();
     window_patch();
     rinput_patch();
+    mouse_patch();
     competitive_patch();
     console_patch();
     cgame_patch();
