@@ -12,11 +12,12 @@ It focuses on fixing bugs and adding new features to the game.
 - This software may be terminated or withdrawn at any time
 
 # Version history
-- 2026-03-27 - **[1.4.6.7](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.7)** - **current**
+- 2026-04-07 - **[1.4.6.8](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.8)** - **current**
 
 <details>
   <summary>Older versions</summary>
 
+- 2026-03-27: **[1.4.6.7](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.7)**
 - 2026-03-25: **[1.4.6.6](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.6)**
 - 2026-03-24: **[1.4.6.5](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.5)**
 - 2026-02-22: **[1.4.6.4](https://github.com/callofduty2x/CoD2x/releases/tag/v1.4.6.4)**
@@ -205,7 +206,7 @@ It focuses on fixing bugs and adding new features to the game.
 
 # How to install (client on Windows)
 1. You need original Call of Duty 2 with version [1.3](https://www.moddb.com/games/call-of-duty-2/downloads/call-of-duty-2-pc-patch-v-13) installed.
-2. Download latest version of CoD2x - [CoD2x_1.4.6.7_windows.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.7/CoD2x_1.4.6.7_windows.zip)
+2. Download latest version of CoD2x - [CoD2x_1.4.6.8_windows.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.8/CoD2x_1.4.6.8_windows.zip)
 3. Extract these files from the archive to the Call of Duty 2 folder, replacing any existing file:
     - 📄 mss32.dll
     - 📄 mss32_original.dll
@@ -234,7 +235,7 @@ It focuses on fixing bugs and adding new features to the game.
 
 
 # How to install (server on Linux)
-1. Download latest version of CoD2x - [CoD2x_1.4.6.7_linux.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.7/CoD2x_1.4.6.7_linux.zip)
+1. Download latest version of CoD2x - [CoD2x_1.4.6.8_linux.zip](https://github.com/eyza-cod2/CoD2x/releases/download/v1.4.6.8/CoD2x_1.4.6.8_linux.zip)
 2. Extract this file from the archive to the Call of Duty 2 folder:
     - 📄 libCoD2x.so
 3. Final structure should look like this:
@@ -249,9 +250,23 @@ It focuses on fixing bugs and adding new features to the game.
 5. Update chmod for the libCoD2x.so file to be executable:
     - `chmod +x libCoD2x.so`
 6. Run the game with LD_PRELOAD, for example:
-    - `LD_PRELOAD=libCoD2x.so ./cod2_lnxded +exec server.cfg`
+    - `LD_PRELOAD=./libCoD2x.so ./cod2_lnxded +set dedicated 2 +exec server.cfg`
     - 🛈 Its not common that server providers support adding this, only server administrators can do that.
 7. Auto-update is enabled by default. Make sure to enable UDP port 20720. If you want to disable auto-update, set `sv_update "0"` or disable UDP port 20720. On server start, the server will check for the latest version of CoD2x and download it if available. File libCoD2x.so will be replaced with the latest version. Process restart is needed to apply the update. 
+
+# How to run server
+## On Windows
+1. Create a shortcut of CoD2MP_s.exe
+2. Right click on the shortcut, select "Properties"
+3. In the "Target" field, add following parameters at the end of the path:
+    - `+set dedicated 2 +exec server.cfg`
+4. Click "OK"
+5. Run the shortcut to start the server
+## On Linux
+1. Open terminal
+2. Navigate to the Call of Duty 2 folder
+3. Run the server with following command:
+    - `LD_PRELOAD=./libCoD2x.so ./cod2_lnxded +set dedicated 2 +exec server.cfg`
 
 
 # Administrator rights
