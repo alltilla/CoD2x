@@ -1208,6 +1208,9 @@ void SV_SpawnServer(char* mapname) {
 			return;
 	}
 
+    // Ensure that g_cod2x cvar is set to right version
+	Dvar_SetInt(g_cod2x, APP_VERSION_PROTOCOL);
+
     // Fix animation time from crouch to stand
     animation_changeFix(true);
 
