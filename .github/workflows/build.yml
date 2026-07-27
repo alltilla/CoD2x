@@ -40,13 +40,17 @@ jobs:
 
           "$env:GITHUB_WORKSPACE\tools\mingw\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      # SHELL=cmd.exe is required: the makefile's recipes are cmd syntax, and
+      # GNU make prefers sh.exe when one is on PATH, which it is on the runner.
+      # Under sh, `echo #define ... > version.h` makes # start a comment that
+      # swallows the redirect, so version.h is silently never created.
       # Release so the symbols_mss32.h regeneration step in CMakeLists.txt runs.
       # The DLL rename is done here rather than via `make build_win`, whose
       # del/move/cmd block only works under cmd.exe.
       - name: Build mss32.dll
         shell: pwsh
         run: |
-          mingw32-make prebuild configure_win DEBUG=0 WIN_BUILD_DIR=build/win-Release
+          mingw32-make SHELL=cmd.exe prebuild configure_win DEBUG=0 WIN_BUILD_DIR=build/win-Release
           cmake --build build/win-Release --target mss32 --parallel
           Remove-Item -Path bin/windows/mss32.dll -Force -ErrorAction SilentlyContinue
           Move-Item -Path bin/windows/mss32.build.dll -Destination bin/windows/mss32.dll -Force
@@ -60,7 +64,7 @@ jobs:
         run: |
           $first = (Get-FileHash bin/windows/mss32.dll -Algorithm SHA256).Hash
           Remove-Item -Recurse -Force build/win-Release
-          mingw32-make prebuild configure_win DEBUG=0 WIN_BUILD_DIR=build/win-Release
+          mingw32-make SHELL=cmd.exe prebuild configure_win DEBUG=0 WIN_BUILD_DIR=build/win-Release
           cmake --build build/win-Release --target mss32 --parallel
           $second = (Get-FileHash bin/windows/mss32.build.dll -Algorithm SHA256).Hash
           "build 1: $first"
