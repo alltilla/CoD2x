@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux (libCoD2x.so)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Built inside ubuntu 18.04 (glibc 2.27) on purpose: this matches the WSL
+      # environment the README prescribes, and keeps the shipped library loadable
+      # on the old distributions game servers actually run. Building on the
+      # runner's own glibc would raise the requirement - see
+      # tools/ci/check_glibc_floor.sh. Only the compiler runs in the container;
+      # checkout/upload stay on the host so their Node runtime is unaffected.
+      - name: Build libCoD2x.so
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src ubuntu:18.04 bash -eux -c '
+            dpkg --add-architecture i386
+            # bionic is still on archive.ubuntu.com under ESM; fall back to
+            # old-releases for when it is eventually moved there.
+            apt-get update -qq || {
+              sed -i "s|//archive.ubuntu.com|//old-releases.ubuntu.com|g; \
+                      s|//security.ubuntu.com|//old-releases.ubuntu.com|g" /etc/apt/sources.list
+              apt-get update -qq
+            }
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              build-essential make gcc-multilib g++-multilib libc6-dev:i386 \
+              libssl-dev:i386 ca-certificates curl
+            # 18.04 ships cmake 3.10; the build needs a newer one.
+            curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz \
+              | tar xz --strip-components=1 -C /usr/local
+            make prebuild
+            cmake -S . -B build/linux-Release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+            cmake --build build/linux-Release --target linux --parallel
+          '
+          # The container builds as root; make the outputs readable by later steps.
+          sudo chown -R "$(id -u):$(id -g)" bin/linux build || true
+
+      - name: Assert glibc floor has not regressed
+        run: tools/ci/check_glibc_floor.sh bin/linux/libCoD2x.so GLIBC_2.25
+
+      - name: Upload libCoD2x.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: libCoD2x.so
+          path: bin/linux/libCoD2x.so
+          if-no-files-found: error
