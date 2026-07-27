@@ -19,8 +19,9 @@ bin/windows/*
 !bin/windows/gfx_d3d_x86_s.dll
 !bin/windows/localization.txt
 !bin/windows/mss32_original.dll
-!bin/windows/mss32.dll
 !bin/windows/version.inf
+# mss32.dll is deliberately NOT whitelisted: it is a build output, and CI
+# proves it is reproducible from source. See below.
 
 # Ignore all folders in CoD2 windows folder except for main, miles, and pb
 bin/windows/*/
@@ -40,3 +41,28 @@ bin/windows/main/players/default/config_mp.cfg
 
 # Large Binary Ninja pseudo-C dumps - keep locally, too big for GitHub
 src/other/*.bndb_pseudo_c.txt
+
+# -----------------------------------------------------------------------------
+# Build outputs
+#
+# These are produced by the build and reproducible from source (CI rebuilds both
+# and requires byte-identical output), so tracking them adds no information.
+# It also actively hurts: every build dirtied the working tree, each version bump
+# added another uncompressible multi-megabyte copy to history, and a pull request
+# that carried a rebuilt binary could not be checked against its own source. A
+# contributor without a Windows machine cannot produce mss32.dll at all, which
+# made shared-code changes impossible to submit completely.
+#
+# Original game files in bin/ (CoD2MP_s.exe, mss32_original.dll, gfx_*.dll,
+# miles/, cod2_lnxded) are NOT build outputs and stay tracked.
+# -----------------------------------------------------------------------------
+bin/linux/libCoD2x.so
+
+# zip/ staging: `make zip_all` copies the release inputs here before archiving.
+# Only the archives and the manual belong in git.
+zip/windows/*
+!zip/windows/CoD2x_*.zip
+!zip/windows/*.txt
+zip/linux/*
+!zip/linux/CoD2x_*.zip
+!zip/linux/*.txt
