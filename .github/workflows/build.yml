@@ -6,6 +6,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+  # release.yml calls this so a release is built from source in CI rather than
+  # from archives committed by whoever happened to cut it.
+  workflow_call:
 
 concurrency:
   group: build-${{ github.ref }}
