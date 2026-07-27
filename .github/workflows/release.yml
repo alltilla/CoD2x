@@ -7,8 +7,18 @@ on:
       - main
 
 jobs:
+  # Build both targets from source. This workflow used to only check that
+  # zip/windows/*.zip and zip/linux/*.zip already existed in the repository and
+  # then upload them, which meant a release was whatever the person cutting it
+  # happened to have on their machine - unverifiable, and not reproducible by
+  # anyone else.
+  build:
+    if: startsWith(github.event.head_commit.message, 'Version ')
+    uses: ./.github/workflows/build.yml
+
   create-release:
     if: startsWith(github.event.head_commit.message, 'Version ')
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,16 +48,49 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
-      - name: Verify release files exist
+      # The binaries are built from version.h, so a mismatch would ship a release
+      # whose contents disagree with its tag.
+      - name: Check the commit message version matches version.h
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          WINDOWS_ZIP="zip/windows/CoD2x_${VERSION}_windows.zip"
-          LINUX_ZIP="zip/linux/CoD2x_${VERSION}_linux.zip"
+          IN_HEADER=$(grep -oP '^#define APP_VERSION\s+"\K[^"]+' src/shared/version.h)
+          echo "commit message: $VERSION"
+          echo "version.h     : $IN_HEADER"
+          if [ "$VERSION" != "$IN_HEADER" ]; then
+            echo "::error::version.h says '$IN_HEADER' but the commit message says '$VERSION'"
+            exit 1
+          fi
 
-          test -f "$WINDOWS_ZIP" || { echo "Missing $WINDOWS_ZIP"; exit 1; }
-          test -f "$LINUX_ZIP" || { echo "Missing $LINUX_ZIP"; exit 1; }
+      - name: Download the built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-          ls -lh "$WINDOWS_ZIP" "$LINUX_ZIP"
+      # Membership matches what the released archives have always contained, so
+      # the existing install instructions keep working unchanged.
+      - name: Assemble release archives
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          mkdir -p stage/windows stage/linux
+          cp "zip/windows/CoD2x Installation and uninstallation manual.txt" stage/windows/
+          cp bin/windows/mss32_original.dll                                 stage/windows/
+          cp artifacts/mss32.dll/mss32.dll                                  stage/windows/
+
+          cp "zip/linux/CoD2x Installation and uninstallation manual.txt"   stage/linux/
+          cp bin/linux/cod2_lnxded                                          stage/linux/
+          cp artifacts/libCoD2x.so/libCoD2x.so                              stage/linux/
+          chmod +x stage/linux/libCoD2x.so stage/linux/cod2_lnxded
+
+          mkdir -p out
+          (cd stage/windows && zip -q -X -r "$GITHUB_WORKSPACE/out/CoD2x_${VERSION}_windows.zip" .)
+          (cd stage/linux   && zip -q -X -r "$GITHUB_WORKSPACE/out/CoD2x_${VERSION}_linux.zip"   .)
+
+          for z in out/*.zip; do
+            echo "== $z"
+            unzip -l "$z"
+            sha256sum "$z"
+          done
 
       - name: Generate release notes
         run: |
@@ -69,5 +112,5 @@ jobs:
           body_path: release-notes.md
           prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
           files: |
-            zip/windows/CoD2x_${{ steps.version.outputs.version }}_windows.zip
-            zip/linux/CoD2x_${{ steps.version.outputs.version }}_linux.zip
+            out/CoD2x_${{ steps.version.outputs.version }}_windows.zip
+            out/CoD2x_${{ steps.version.outputs.version }}_linux.zip
