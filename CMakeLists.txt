@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.10)
+# 3.13 is the real floor: target_link_options needs 3.13 and
+# add_compile_definitions needs 3.12. The declared 3.10 was already inaccurate -
+# `cmake --build --parallel`, used by the makefile, needs 3.12 as well.
+cmake_minimum_required(VERSION 3.13)
 
 #set(CMAKE_USE_RELATIVE_PATHS ON)
 
