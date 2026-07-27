@@ -9,6 +9,33 @@ project(CoD2x LANGUAGES C CXX)
 
 
 # -----------------------------------
+# Reproducible build stamp
+#
+# The build date used to come from __DATE__ / __TIME__, which made every build
+# produce a different binary and left contributor-submitted DLLs unverifiable.
+# Derive it from the commit instead: same source -> same stamp -> same bytes.
+# Override with -DCOD2X_BUILD_DATE=... (e.g. from SOURCE_DATE_EPOCH) when
+# building outside a git checkout.
+# -----------------------------------
+if (NOT COD2X_BUILD_DATE)
+  find_package(Git QUIET)
+  if (GIT_FOUND)
+    execute_process(
+      # ISO date on purpose: %b would render the month name through the current
+      # locale, so a Hungarian machine and an English runner would disagree.
+      COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" log -1 --date=format:%Y-%m-%d --format=%cd
+      OUTPUT_VARIABLE COD2X_BUILD_DATE
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+  endif()
+endif()
+if (NOT COD2X_BUILD_DATE)
+  set(COD2X_BUILD_DATE "unknown date")
+endif()
+message(STATUS "Reproducible build stamp: ${COD2X_BUILD_DATE}")
+add_compile_definitions(COD2X_BUILD_DATE="${COD2X_BUILD_DATE}")
+
+# -----------------------------------
 # Function that collects all files with given extensions from a base directory (recursively)
 # -----------------------------------
 function(find_files_by_extension OUT_LIST BASE_DIR)

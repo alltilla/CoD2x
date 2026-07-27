@@ -4,6 +4,14 @@
 #include "cod2_common.h"
 #include "cod2_cmd.h"
 
+// Build stamp shown in the startup line and in the /version cvar.
+// Deliberately NOT __DATE__ / __TIME__: those change on every build, which makes
+// the binary irreproducible and a contributor-submitted DLL impossible to verify
+// against its source. CMake derives this from the commit date instead.
+#ifndef COD2X_BUILD_DATE
+    #define COD2X_BUILD_DATE "unknown date"
+#endif
+
 #define MAX_CONSOLE_LINES 32
 #define com_consoleLines ((char**)ADDR(0x00c26110, 0x081a21e0))
 #define com_numConsoleLines (*(int*)ADDR(0x00c27280, 0x081a21d4))
@@ -320,7 +328,7 @@ void common_init() {
 void common_patch()
 {
     // Print into console when the app is started -> "CoD2 MP 1.3 build win-x86 May  1 2006"
-    patch_string_ptr(ADDR(0x00434467 + 1, 0x080620c6 + 4), __DATE__ " " __TIME__);          // originally win: "May  1 2006",  linux: "Jun 23 2006"
+    patch_string_ptr(ADDR(0x00434467 + 1, 0x080620c6 + 4), COD2X_BUILD_DATE);               // originally win: "May  1 2006",  linux: "Jun 23 2006"
     patch_string_ptr(ADDR(0x0043446c + 1, 0x080620ce + 4), ADDR("win-x86", "linux-i386"));  // original
     patch_string_ptr(ADDR(0x00434471 + 1, 0x080620d6 + 4), APP_VERSION);                    // originally "1.3"
     patch_string_ptr(ADDR(0x00434476 + 1, 0x080620de + 4), "CoD2 MP");                      // original
@@ -328,7 +336,7 @@ void common_patch()
 
 
     // Value of cvar /version   ->   "CoD2 MP 1.3 build pc_1.3_1_1 Mon May 01 2006 05:05:43PM linux-i386"
-    patch_string_ptr(ADDR(0x004346de + 1, 0x08051e1e + 4), __DATE__ " " __TIME__);          // originally "Mon May 01 2006 05:05:43PM"
+    patch_string_ptr(ADDR(0x004346de + 1, 0x08051e1e + 4), COD2X_BUILD_DATE);               // originally "Mon May 01 2006 05:05:43PM"
     patch_string_ptr(ADDR(0x004346e3 + 1, 0x08051e26 + 4), "by eyza");                      // originally "pc_1.3_1_1"
     patch_string_ptr(ADDR(0x004346f7 + 1, 0x08062219 + 4), ADDR("win-x86", "linux-i386"));  // original
     patch_string_ptr(ADDR(0x00434701 + 1, 0x08062225 + 4), APP_VERSION);                    // originally "1.3"
