@@ -48,16 +48,19 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
 
-      # The binaries are built from version.h, so a mismatch would ship a release
-      # whose contents disagree with its tag.
-      - name: Check the commit message version matches version.h
+      # The binaries are built from the version in the makefile, so a mismatch
+      # would ship a release whose contents disagree with its tag. version.h is
+      # generated rather than tracked, so generate it with the real generator and
+      # read that, instead of reimplementing the makefile's parsing here.
+      - name: Check the commit message version matches the makefile
         run: |
+          make prebuild
           VERSION="${{ steps.version.outputs.version }}"
           IN_HEADER=$(grep -oP '^#define APP_VERSION\s+"\K[^"]+' src/shared/version.h)
           echo "commit message: $VERSION"
-          echo "version.h     : $IN_HEADER"
+          echo "makefile      : $IN_HEADER"
           if [ "$VERSION" != "$IN_HEADER" ]; then
-            echo "::error::version.h says '$IN_HEADER' but the commit message says '$VERSION'"
+            echo "::error::the makefile builds '$IN_HEADER' but the commit message says '$VERSION'"
             exit 1
           fi
 
