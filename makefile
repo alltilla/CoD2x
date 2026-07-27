@@ -143,7 +143,15 @@ endif
 # ========================================================================================================
 .PHONY: prebuild
 
-prebuild: src/shared/version.h src/mss32/version.rc
+# version.rc has a rule only under Windows (see below), and only the Windows
+# target compiles it, so depending on it elsewhere would make prebuild fail with
+# "No rule to make target" once the generated file is no longer tracked.
+PREBUILD_DEPS = src/shared/version.h
+ifeq ($(OS),Windows_NT)
+    PREBUILD_DEPS += src/mss32/version.rc
+endif
+
+prebuild: $(PREBUILD_DEPS)
 	@echo "Current working directory: $(CURDIR)"
 
 
