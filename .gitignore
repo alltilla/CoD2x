@@ -57,3 +57,12 @@ src/other/*.bndb_pseudo_c.txt
 # miles/, cod2_lnxded) are NOT build outputs and stay tracked.
 # -----------------------------------------------------------------------------
 bin/linux/libCoD2x.so
+
+# zip/ staging: `make zip_all` copies the release inputs here before archiving.
+# Only the archives and the manual belong in git.
+zip/windows/*
+!zip/windows/CoD2x_*.zip
+!zip/windows/*.txt
+zip/linux/*
+!zip/linux/CoD2x_*.zip
+!zip/linux/*.txt
