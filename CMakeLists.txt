@@ -32,7 +32,23 @@ endif()
 if (NOT COD2X_BUILD_DATE)
   set(COD2X_BUILD_DATE "unknown date")
 endif()
-message(STATUS "Reproducible build stamp: ${COD2X_BUILD_DATE}")
+
+# Unix timestamp of the same commit, for tools that honour SOURCE_DATE_EPOCH
+# (binutils strip stamps the PE header from it).
+if (NOT COD2X_SOURCE_DATE_EPOCH)
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" log -1 --format=%ct
+      OUTPUT_VARIABLE COD2X_SOURCE_DATE_EPOCH
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+  endif()
+endif()
+if (NOT COD2X_SOURCE_DATE_EPOCH)
+  set(COD2X_SOURCE_DATE_EPOCH 0)
+endif()
+
+message(STATUS "Reproducible build stamp: ${COD2X_BUILD_DATE} (epoch ${COD2X_SOURCE_DATE_EPOCH})")
 add_compile_definitions(COD2X_BUILD_DATE="${COD2X_BUILD_DATE}")
 
 # -----------------------------------
@@ -157,11 +173,17 @@ if (WIN32)
     -static-libgcc -static-libstdc++ -static pthread stdc++
   )
 
-  # ld defaults to --enable-auto-image-base, which derives the base from a hash
-  # of the output path, so every machine got a different one (0x61a40000 /
-  # 0x66900000 / 0x6d040000) and with it every absolute pointer in .rdata/.text
-  # plus all of .reloc.
+  # Reproducibility:
+  #  --no-insert-timestamp  zeroes the COFF and export-directory timestamps,
+  #                         which were 8 of the 10 bytes that differed between
+  #                         two clean builds of identical source.
+  #  --image-base           ld defaults to --enable-auto-image-base, which
+  #                         derives the base from a hash of the output path, so
+  #                         every machine got a different one (0x61a40000 /
+  #                         0x66900000 / 0x6d040000) and with it every absolute
+  #                         pointer in .rdata/.text plus all of .reloc.
   target_link_options(mss32 PRIVATE
+    -Wl,--no-insert-timestamp
     -Wl,--image-base,0x10000000
   )
 
@@ -187,9 +209,13 @@ if (WIN32)
       find_program(CMAKE_STRIP NAMES strip)
     endif()
     if (CMAKE_STRIP)
+      # SOURCE_DATE_EPOCH: strip rewrites the PE COFF header and stamps it with
+      # the current time, undoing the linker's --no-insert-timestamp. binutils
+      # honours this variable and uses it as the fixed timestamp instead.
       add_custom_command(TARGET mss32 POST_BUILD
         COMMAND echo Stripping mss32.dll...
-        COMMAND "${CMAKE_STRIP}" "$<TARGET_FILE:mss32>"
+        COMMAND "${CMAKE_COMMAND}" -E env "SOURCE_DATE_EPOCH=${COD2X_SOURCE_DATE_EPOCH}"
+                "${CMAKE_STRIP}" "$<TARGET_FILE:mss32>"
         COMMENT "Stripping mss32.dll"
         VERBATIM)
     else()
