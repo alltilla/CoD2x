@@ -157,6 +157,14 @@ if (WIN32)
     -static-libgcc -static-libstdc++ -static pthread stdc++
   )
 
+  # ld defaults to --enable-auto-image-base, which derives the base from a hash
+  # of the output path, so every machine got a different one (0x61a40000 /
+  # 0x66900000 / 0x6d040000) and with it every absolute pointer in .rdata/.text
+  # plus all of .reloc.
+  target_link_options(mss32 PRIVATE
+    -Wl,--image-base,0x10000000
+  )
+
   
 
   # Generate symbols_mss32.h from the just-linked (pre-strip) DLL.
