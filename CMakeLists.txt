@@ -51,6 +51,16 @@ endif()
 message(STATUS "Reproducible build stamp: ${COD2X_BUILD_DATE} (epoch ${COD2X_SOURCE_DATE_EPOCH})")
 add_compile_definitions(COD2X_BUILD_DATE="${COD2X_BUILD_DATE}")
 
+# Normalise __FILE__ so the build directory does not leak into the binary.
+# Needs GCC 8+; the Linux server is built on ubuntu 18.04 (GCC 7.5) to keep the
+# glibc floor, and that only has -fdebug-prefix-map, so probe before using it.
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-ffile-prefix-map=/probe=." COD2X_HAS_FILE_PREFIX_MAP)
+if (NOT COD2X_HAS_FILE_PREFIX_MAP)
+  message(STATUS "No -ffile-prefix-map (needs GCC 8+); __FILE__ paths not normalised")
+endif()
+
+
 # -----------------------------------
 # Function that collects all files with given extensions from a base directory (recursively)
 # -----------------------------------
@@ -165,6 +175,13 @@ if (WIN32)
     >
   )
 
+  # Must stay inside a C/CXX genex: nasm parses a leading -f as its output
+  # format, so -ffile-prefix-map=... becomes "-f file-prefix-map=..." and fails.
+  if (COD2X_HAS_FILE_PREFIX_MAP)
+    target_compile_options(mss32 PRIVATE
+      $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>)
+  endif()
+
   target_link_libraries(mss32 PRIVATE
     kernel32 wininet dbghelp ole32 oleaut32 uuid gdi32
     "${CMAKE_SOURCE_DIR}/tools/openssl_mingw/lib/libssl.a"
@@ -260,6 +277,10 @@ if (UNIX AND NOT WIN32)
     -fdiagnostics-color=always
     $<$<CONFIG:Debug>:-DDEBUG=1>
   )
+
+  if (COD2X_HAS_FILE_PREFIX_MAP)
+    target_compile_options(linux PRIVATE -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.)
+  endif()
 
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -m32 -shared -static-libgcc -static-libstdc++")
 
