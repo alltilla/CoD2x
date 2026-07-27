@@ -52,6 +52,26 @@ jobs:
           Remove-Item -Path bin/windows/mss32.dll -Force -ErrorAction SilentlyContinue
           Move-Item -Path bin/windows/mss32.build.dll -Destination bin/windows/mss32.dll -Force
 
+      # A pull request can only be reviewed for what its source says if the
+      # source fully determines the binary. Rebuild from scratch and require the
+      # bytes to match, so nothing can silently reintroduce a timestamp, a build
+      # path, or anything else that makes the output unverifiable.
+      - name: Verify mss32.dll is reproducible
+        shell: pwsh
+        run: |
+          $first = (Get-FileHash bin/windows/mss32.dll -Algorithm SHA256).Hash
+          Remove-Item -Recurse -Force build/win-Release
+          mingw32-make SHELL=cmd.exe prebuild configure_win DEBUG=0 WIN_BUILD_DIR=build/win-Release
+          cmake --build build/win-Release --target mss32 --parallel
+          $second = (Get-FileHash bin/windows/mss32.build.dll -Algorithm SHA256).Hash
+          "build 1: $first"
+          "build 2: $second"
+          if ($first -ne $second) {
+            Write-Output "::error::mss32.dll is not reproducible - identical source produced different bytes."
+            exit 1
+          }
+          "OK: byte-identical across a clean rebuild."
+
       - name: Upload mss32.dll
         uses: actions/upload-artifact@v4
         with:
@@ -96,6 +116,23 @@ jobs:
             make prebuild
             cmake -S . -B build/linux-Release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
             cmake --build build/linux-Release --target linux --parallel
+            first=$(sha256sum bin/linux/libCoD2x.so | cut -d" " -f1)
+
+            # Same reasoning as the Windows job: a reviewer can only judge a pull
+            # request by its source if the source fully determines the binary.
+            # Both builds run in one container so the toolchain is installed once.
+            rm -rf build/linux-Release
+            cmake -S . -B build/linux-Release -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+            cmake --build build/linux-Release --target linux --parallel
+            second=$(sha256sum bin/linux/libCoD2x.so | cut -d" " -f1)
+
+            echo "build 1: $first"
+            echo "build 2: $second"
+            if [ "$first" != "$second" ]; then
+              echo "::error::libCoD2x.so is not reproducible - identical source produced different bytes."
+              exit 1
+            fi
+            echo "OK: byte-identical across a clean rebuild."
           '
           # The container builds as root; make the outputs readable by later steps.
           sudo chown -R "$(id -u):$(id -g)" bin/linux build || true
