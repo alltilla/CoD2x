@@ -6,6 +6,59 @@ project(CoD2x LANGUAGES C CXX)
 
 
 # -----------------------------------
+# Reproducible build stamp
+#
+# The build date used to come from __DATE__ / __TIME__, which made every build
+# produce a different binary and left contributor-submitted DLLs unverifiable.
+# Derive it from the commit instead: same source -> same stamp -> same bytes.
+# Override with -DCOD2X_BUILD_DATE=... (e.g. from SOURCE_DATE_EPOCH) when
+# building outside a git checkout.
+# -----------------------------------
+if (NOT COD2X_BUILD_DATE)
+  find_package(Git QUIET)
+  if (GIT_FOUND)
+    execute_process(
+      # ISO date on purpose: %b would render the month name through the current
+      # locale, so a Hungarian machine and an English runner would disagree.
+      COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" log -1 --date=format:%Y-%m-%d --format=%cd
+      OUTPUT_VARIABLE COD2X_BUILD_DATE
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+  endif()
+endif()
+if (NOT COD2X_BUILD_DATE)
+  set(COD2X_BUILD_DATE "unknown date")
+endif()
+
+# Unix timestamp of the same commit, for tools that honour SOURCE_DATE_EPOCH
+# (binutils strip stamps the PE header from it).
+if (NOT COD2X_SOURCE_DATE_EPOCH)
+  if (GIT_FOUND)
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" log -1 --format=%ct
+      OUTPUT_VARIABLE COD2X_SOURCE_DATE_EPOCH
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+  endif()
+endif()
+if (NOT COD2X_SOURCE_DATE_EPOCH)
+  set(COD2X_SOURCE_DATE_EPOCH 0)
+endif()
+
+message(STATUS "Reproducible build stamp: ${COD2X_BUILD_DATE} (epoch ${COD2X_SOURCE_DATE_EPOCH})")
+add_compile_definitions(COD2X_BUILD_DATE="${COD2X_BUILD_DATE}")
+
+# Normalise __FILE__ so the build directory does not leak into the binary.
+# Needs GCC 8+; the Linux server is built on ubuntu 18.04 (GCC 7.5) to keep the
+# glibc floor, and that only has -fdebug-prefix-map, so probe before using it.
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-ffile-prefix-map=/probe=." COD2X_HAS_FILE_PREFIX_MAP)
+if (NOT COD2X_HAS_FILE_PREFIX_MAP)
+  message(STATUS "No -ffile-prefix-map (needs GCC 8+); __FILE__ paths not normalised")
+endif()
+
+
+# -----------------------------------
 # Function that collects all files with given extensions from a base directory (recursively)
 # -----------------------------------
 function(find_files_by_extension OUT_LIST BASE_DIR)
@@ -119,12 +172,33 @@ if (WIN32)
     >
   )
 
+  # Must stay inside a C/CXX genex: nasm parses a leading -f as its output
+  # format, so -ffile-prefix-map=... becomes "-f file-prefix-map=..." and fails.
+  if (COD2X_HAS_FILE_PREFIX_MAP)
+    target_compile_options(mss32 PRIVATE
+      $<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>)
+  endif()
+
   target_link_libraries(mss32 PRIVATE
     kernel32 wininet dbghelp ole32 oleaut32 uuid gdi32
     "${CMAKE_SOURCE_DIR}/tools/openssl_mingw/lib/libssl.a"
     "${CMAKE_SOURCE_DIR}/tools/openssl_mingw/lib/libcrypto.a"
     ws2_32 crypt32
     -static-libgcc -static-libstdc++ -static pthread stdc++
+  )
+
+  # Reproducibility:
+  #  --no-insert-timestamp  zeroes the COFF and export-directory timestamps,
+  #                         which were 8 of the 10 bytes that differed between
+  #                         two clean builds of identical source.
+  #  --image-base           ld defaults to --enable-auto-image-base, which
+  #                         derives the base from a hash of the output path, so
+  #                         every machine got a different one (0x61a40000 /
+  #                         0x66900000 / 0x6d040000) and with it every absolute
+  #                         pointer in .rdata/.text plus all of .reloc.
+  target_link_options(mss32 PRIVATE
+    -Wl,--no-insert-timestamp
+    -Wl,--image-base,0x10000000
   )
 
   
@@ -149,9 +223,13 @@ if (WIN32)
       find_program(CMAKE_STRIP NAMES strip)
     endif()
     if (CMAKE_STRIP)
+      # SOURCE_DATE_EPOCH: strip rewrites the PE COFF header and stamps it with
+      # the current time, undoing the linker's --no-insert-timestamp. binutils
+      # honours this variable and uses it as the fixed timestamp instead.
       add_custom_command(TARGET mss32 POST_BUILD
         COMMAND echo Stripping mss32.dll...
-        COMMAND "${CMAKE_STRIP}" "$<TARGET_FILE:mss32>"
+        COMMAND "${CMAKE_COMMAND}" -E env "SOURCE_DATE_EPOCH=${COD2X_SOURCE_DATE_EPOCH}"
+                "${CMAKE_STRIP}" "$<TARGET_FILE:mss32>"
         COMMENT "Stripping mss32.dll"
         VERBATIM)
     else()
@@ -196,6 +274,10 @@ if (UNIX AND NOT WIN32)
     -fdiagnostics-color=always
     $<$<CONFIG:Debug>:-DDEBUG=1>
   )
+
+  if (COD2X_HAS_FILE_PREFIX_MAP)
+    target_compile_options(linux PRIVATE -ffile-prefix-map=${CMAKE_SOURCE_DIR}=.)
+  endif()
 
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -m32 -shared -static-libgcc -static-libstdc++")
 

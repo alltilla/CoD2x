@@ -82,7 +82,10 @@ jobs:
             }
             DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
               build-essential make gcc-multilib g++-multilib libc6-dev:i386 \
-              libssl-dev:i386 ca-certificates curl
+              libssl-dev:i386 ca-certificates curl git
+            # git is needed for the reproducible build stamp; the checkout is
+            # bind-mounted from the host so it is owned by another uid.
+            git config --global --add safe.directory /src
             # 18.04 ships cmake 3.10; the build needs a newer one.
             curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz \
               | tar xz --strip-components=1 -C /usr/local
